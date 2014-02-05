@@ -1,0 +1,95 @@
+#!/bin/dash
+set -e
+
+## git project root
+git_root=$(dirname $(readlink -f $(git rev-parse --git-dir)))
+
+stog=$0
+option=$1
+[ -n "$option" ] && shift 
+
+usage()
+{
+cat << EOF
+Usage:
+    1.Install stog into .git/bin:
+	stog install
+    2.Import svn config:
+	stog import <config>
+    3.sync svn to origin
+	stog sync <remote_name>
+    3.show svn info
+	stog show <remote_name>
+EOF
+}
+
+stog_install()
+{
+    local stog_ifself=$0
+    local install_path="$git_root/.git/bin"
+
+    install -d $install_path
+    install -m 755 $stog_ifself $install_path
+    
+    git config --local alias.stog '!'"cd \$PWD/\$GIT_PREFIX && $install_path/stog"
+}
+
+stog_import()
+{
+    local config_file=$1
+    
+    echo "Import Config: $config_file"
+    . $config_file
+    
+    if [ -n "$remote_name" ]; then
+	git config --local svn-remote.$remote_name.preserve-empty-dirs 	$preserve_empty_dirs
+	git config --local svn-remote.$remote_name.url 	$url
+	
+	[ -n "$trunk" ] && git config --local svn-remote.$remote_name.fetch		$trunk:refs/remotes/$remote_name/trunk
+	[ -n "$branches" ] && git config --local svn-remote.$remote_name.branches	$branches/*:refs/remotes/$remote_name/branches/*
+	[ -n "$tags" ] && git config --local svn-remote.$remote_name.tags		$tags/*:refs/remotes/$remote_name/tags/*
+    fi
+}
+
+stog_sync()
+{
+    local remote_name=${1:-svn}
+    
+    git fetch origin
+    git branch -r | grep -o "origin/remotes/$remote_name/.*" | sed -e "s,^origin/,," |  xargs -n 1 -t -I{} git update-ref "refs/{}" "origin/{}"
+    
+    git svn fetch $name
+    git branch -a | grep -o "remotes/$remote_name/.*" | xargs -n 1 -t -I{} git push -q origin {}:refs/heads/{}
+}
+
+stog_show()
+{
+    local remote_name=${1:-svn}
+
+    git config --local -l |  grep "^svn-remote\.$remote_name"
+}
+
+
+if [ "$option" = "install" ]; then
+    stog_install $stog
+elif [ "$option" = "import" ]; then
+    stog_import $1
+elif [ "$option" = "sync" ]; then
+    stog_sync $1
+elif [ "$option" = "show" ]; then
+    stog_show $1
+else
+    usage
+    exit 1
+fi
+
+
+exit
+## init svn
+
+## sync origin/$name/* to local refs/remotes/$name/*
+git remote show -n origin | cut -c 5- | grep ^$name/ | xargs -n 1 -t -I{} git update-ref "refs/remotes/{}" "origin/{}"
+
+
+
+

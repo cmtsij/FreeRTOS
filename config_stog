@@ -1,0 +1,17 @@
+#default remote name:svn
+remote_name=svn
+
+# SVN URL
+url=svn://svn.code.sf.net/p/freertos/code
+
+# relative trunk path based on SVN URL
+trunk=trunk
+
+# relative branches path based on SVN URL
+branches=branches
+
+# relative tags path based on SVN URL
+tags=tags
+
+# Others
+preserve_empty_dirs=true  #true or false
