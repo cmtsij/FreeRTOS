@@ -8,7 +8,7 @@ url=svn://svn.code.sf.net/p/freertos/code
 trunk=trunk
 
 # relative branches path based on SVN URL
-branches=branches
+branches=
 
 # relative tags path based on SVN URL
 tags=tags
